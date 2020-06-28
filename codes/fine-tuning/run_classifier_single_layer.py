@@ -312,35 +312,60 @@ class IMDBProcessor(DataProcessor):
 
     def get_train_examples(self, data_dir, data_num=None):
         """See base class."""
-        train_data = pd.read_csv(os.path.join(data_dir, "train.csv"),header=None,sep="\t").values
-        return self._create_examples(train_data, "train", data_num=data_num)
+        return self._create_examples(data_dir)
 
     def get_dev_examples(self, data_dir, data_num=None):
         """See base class."""
-        dev_data = pd.read_csv(os.path.join(data_dir, "test.csv"),header=None,sep="\t").values
-        return self._create_examples(dev_data, "dev", data_num=data_num)
+        return self._create_eval_examples(data_dir)
 
     def get_labels(self):
         """See base class."""
-        return ["0","1"]
+        return [0,1]
 
-    def _create_examples(self, lines, set_type, data_num=None):
-        """Creates examples for the training and dev sets."""
+#     def _create_examples(self, lines, set_type, data_num=None):
+#         """Creates examples for the training and dev sets."""
+#         examples = []
+#         for (i, line) in enumerate(lines):
+#             if data_num is not None:
+#                 if i>data_num:break
+#             guid = "%s-%s" % (set_type, i)
+#             text_a = tokenization.convert_to_unicode(str(line[1]))
+#             label = tokenization.convert_to_unicode(str(line[0]))
+#             """if i%1000==0:
+#                 print(i)
+#                 print("guid=",guid)
+#                 print("text_a=",text_a)
+#                 print("label=",label)"""
+#             examples.append(
+#                 InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
+#         return examples
+
+      def _create_examples(self, data_dir):
+          examples = []
+
+          data = pd.read_csv(data_dir, header=None,  index_col=0)
+          data.columns=["Label", "Sentence"]
+          data = data.dropna()
+          data, _ = train_test_split(data, test_size=0.1, random_state=7)
+
+          for i, row in data.iterrows():
+              guid = "%s-%s" % ("train", i)
+              examples.append(InputExample(guid=guid, text_a = tokenization.convert_to_unicode(row['Sentence']), text_b=None, label=tokenization.convert_to_unicode(str(row['Label'])))
+          return examples
+
+     def _create_eval_examples(self, data_dir):
         examples = []
-        for (i, line) in enumerate(lines):
-            if data_num is not None:
-                if i>data_num:break
-            guid = "%s-%s" % (set_type, i)
-            text_a = tokenization.convert_to_unicode(str(line[1]))
-            label = tokenization.convert_to_unicode(str(line[0]))
-            """if i%1000==0:
-                print(i)
-                print("guid=",guid)
-                print("text_a=",text_a)
-                print("label=",label)"""
-            examples.append(
-                InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
-        return examples
+
+        data = pd.read_csv(data_dir, header=None,  index_col=0)
+        data.columns=["Label", "Sentence"]
+        data = data.dropna()
+        _, data = train_test_split(data, test_size=0.1, random_state=7)
+
+        for i, row in data.iterrows():
+            guid = "%s-%s" % ("train", i)
+            examples.append(InputExample(guid=guid, text_a=tokenization.convert_to_unicode(row['Sentence']), text_b=None, label=tokenization.convert_to_unicode(str(row['Label'])))
+        return examples                              
+                              
 
 
 class IMDBProcessor_trunc_medium(DataProcessor):
